@@ -75,10 +75,8 @@ def call(
     params = params if params else {}
     params.update(kwargs)
     if params:
-        query_string = "{}{}{}".format(
-            query_string, "&" if query_string else "", urlencode(params, True)
-        )
-    result = api(
+        query_string = f'{query_string}{"&" if query_string else ""}{urlencode(params, True)}'
+    if result := api(
         create_environ(
             path=url,
             method=method,
@@ -89,8 +87,7 @@ def call(
             host=host,
         ),
         response,
-    )
-    if result:
+    ):
         response.data = _internal_result(result)
         response.content_type = response.headers_dict["content-type"]
         if "application/json" in response.content_type:
@@ -120,7 +117,7 @@ def cli(method, *args, api=None, module=None, **arguments):
             values = (values,)
         for value in values:
             command_args.append("--{0}".format(name))
-            if not value in (True, False):
+            if value not in (True, False):
                 command_args.append("{0}".format(value))
 
     old_sys_argv = sys.argv

@@ -10,12 +10,12 @@ class GIT(object):
     @hug.object.cli
     def push(self, branch="master"):
         """Push the latest to origin"""
-        return "Pushing {}".format(branch)
+        return f"Pushing {branch}"
 
     @hug.object.cli
     def pull(self, branch="master"):
         """Pull in the latest from origin"""
-        return "Pulling {}".format(branch)
+        return f"Pulling {branch}"
 
 
 if __name__ == "__main__":

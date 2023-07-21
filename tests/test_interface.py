@@ -57,9 +57,12 @@ class TestHTTP(object):
 
         assert (
             hug.test.get(
-                __hug__, "my_example_api", body="", headers={"content-type": "application/json"}
+                __hug__,
+                "my_example_api",
+                body="",
+                headers={"content-type": "application/json"},
             ).data
-            == None
+            is None
         )
 
 

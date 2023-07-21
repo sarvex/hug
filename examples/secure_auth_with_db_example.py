@@ -65,8 +65,7 @@ def authenticate_key(api_key):
     :return: authenticated username
     """
     user_model = Query()
-    user = db.search(user_model.api_key == api_key)[0]
-    if user:
+    if user := db.search(user_model.api_key == api_key)[0]:
         return user["username"]
     return False
 
@@ -110,15 +109,11 @@ def get_token(authed_user: hug.directives.user):
     :return:
     """
     user_model = Query()
-    user = db.search(user_model.username == authed_user)[0]
-
-    if user:
-        out = {"user": user["username"], "api_key": user["api_key"]}
-    else:
-        # this should never happen
-        out = {"error": "User {0} does not exist".format(authed_user)}
-
-    return out
+    return (
+        {"user": user["username"], "api_key": user["api_key"]}
+        if (user := db.search(user_model.username == authed_user)[0])
+        else {"error": "User {0} does not exist".format(authed_user)}
+    )
 
 
 # Same thing, but authenticating against an API key
@@ -129,9 +124,7 @@ def get_job_details(job_id):
     :param job_id:
     :return:
     """
-    job = {"job_id": job_id, "details": "Details go here"}
-
-    return job
+    return {"job_id": job_id, "details": "Details go here"}
 
 
 if __name__ == "__main__":

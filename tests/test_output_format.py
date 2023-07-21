@@ -89,10 +89,10 @@ def test_json():
     converted = hug.input_format.json(BytesIO(hug.output_format.json(data)))
     assert converted == {"name": "name", "value": "value"}
 
-    data = set((1, 2, 3, 3))
+    data = {1, 2, 3, 3}
     assert hug.input_format.json(BytesIO(hug.output_format.json(data))) == [1, 2, 3]
 
-    data = (number for number in range(1, 4))
+    data = iter(range(1, 4))
     assert hug.input_format.json(BytesIO(hug.output_format.json(data))) == [1, 2, 3]
 
     data = [Decimal(1.5), Decimal("155.23"), Decimal("1234.25")]

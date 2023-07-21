@@ -73,6 +73,7 @@ def create(
     extend = extend if type(extend) == type else type(extend)
 
     def new_type_handler(function):
+
         class NewType(extend):
             __slots__ = ()
             _accept_context = accept_context
@@ -197,13 +198,14 @@ def create(
                             return function(value, context)
 
         NewType.__doc__ = function.__doc__ if doc is None else doc
-        if auto_instance and not (
-            introspect.arguments(NewType.__init__, -1)
-            or introspect.takes_kwargs(NewType.__init__)
-            or introspect.takes_args(NewType.__init__)
-        ):
-            return NewType()
-        return NewType
+        return (
+            NewType()
+            if auto_instance
+            and not introspect.arguments(NewType.__init__, -1)
+            and not introspect.takes_kwargs(NewType.__init__)
+            and not introspect.takes_args(NewType.__init__)
+            else NewType
+        )
 
     return new_type_handler
 
@@ -243,9 +245,13 @@ text = Text()
 
 
 class SubTyped(type):
-    def __getitem__(cls, sub_type):
-        class TypedSubclass(cls):
+    def __getitem__(self, sub_type):
+
+
+
+        class TypedSubclass(self):
             _sub_type = sub_type
+
 
         return TypedSubclass
 
@@ -334,7 +340,7 @@ class OneOf(Type):
         return "Accepts one of the following values: ({0})".format("|".join(self.values))
 
     def __call__(self, value):
-        if not value in self.values:
+        if value not in self.values:
             raise KeyError(
                 "Invalid value passed. The accepted values are: ({0})".format("|".join(self.values))
             )
@@ -355,7 +361,7 @@ class Mapping(OneOf):
         return "Accepts one of the following values: ({0})".format("|".join(self.values))
 
     def __call__(self, value):
-        if not value in self.values:
+        if value not in self.values:
             raise KeyError(
                 "Invalid value passed. The accepted values are: ({0})".format("|".join(self.values))
             )
@@ -373,15 +379,14 @@ class JSON(Type):
                 return json_converter.loads(value)
             except Exception:
                 raise ValueError("Incorrectly formatted JSON provided")
-        if type(value) is list:
-            # If Falcon is set to comma-separate entries, this segment joins them again.
-            try:
-                fixed_value = ",".join(value)
-                return json_converter.loads(fixed_value)
-            except Exception:
-                raise ValueError("Incorrectly formatted JSON provided")
-        else:
+        if type(value) is not list:
             return value
+        # If Falcon is set to comma-separate entries, this segment joins them again.
+        try:
+            fixed_value = ",".join(value)
+            return json_converter.loads(fixed_value)
+        except Exception:
+            raise ValueError("Incorrectly formatted JSON provided")
 
 
 class Multi(Type):
@@ -517,7 +522,7 @@ class ShorterThan(Type):
     def __call__(self, value):
         value = self.convert(value)
         length = len(value)
-        if not length < self.limit:
+        if length >= self.limit:
             raise ValueError(
                 "'{0}' is longer then the allowed limit of {1}".format(value, self.limit)
             )
@@ -540,7 +545,7 @@ class LongerThan(Type):
     def __call__(self, value):
         value = self.convert(value)
         length = len(value)
-        if not length > self.limit:
+        if length <= self.limit:
             raise ValueError("'{0}' must be longer than {1}".format(value, self.limit))
         return value
 
@@ -587,10 +592,7 @@ class Nullable(Chain):
         self.types = types
 
     def __call__(self, value):
-        if value is None:
-            return None
-        else:
-            return super(Nullable, self).__call__(value)
+        return None if value is None else super(Nullable, self).__call__(value)
 
 
 class TypedProperty(object):
@@ -599,7 +601,7 @@ class TypedProperty(object):
     __slots__ = ("name", "type_func")
 
     def __init__(self, name, type_func):
-        self.name = "_" + name
+        self.name = f"_{name}"
         self.type_func = type_func
 
     def __get__(self, instance, cls):
@@ -617,21 +619,21 @@ class NewTypeMeta(type):
 
     __slots__ = ()
 
-    def __init__(cls, name, bases, nmspc):
-        cls._types = {
+    def __init__(self, name, bases, nmspc):
+        self._types = {
             attr: getattr(cls, attr)
             for attr in dir(cls)
             if getattr(getattr(cls, attr), "_hug_type", False)
         }
-        slots = getattr(cls, "__slots__", ())
+        slots = getattr(self, "__slots__", ())
         slots = set(slots)
-        for attr, type_func in cls._types.items():
-            slots.add("_" + attr)
+        for attr, type_func in self._types.items():
+            slots.add(f"_{attr}")
             slots.add(attr)
             prop = TypedProperty(attr, type_func)
-            setattr(cls, attr, prop)
-        cls.__slots__ = tuple(slots)
-        super(NewTypeMeta, cls).__init__(name, bases, nmspc)
+            setattr(self, attr, prop)
+        self.__slots__ = tuple(slots)
+        super(NewTypeMeta, self).__init__(name, bases, nmspc)
 
 
 class Schema(object, metaclass=NewTypeMeta):
@@ -640,16 +642,13 @@ class Schema(object, metaclass=NewTypeMeta):
     __slots__ = ()
 
     def __new__(cls, json, *args, **kwargs):
-        if json.__class__ == cls:
-            return json
-        else:
-            return super(Schema, cls).__new__(cls)
+        return json if json.__class__ == cls else super(Schema, cls).__new__(cls)
 
     def __init__(self, json, force=False):
         if self != json:
             for (key, value) in json.items():
                 if force:
-                    key = "_" + key
+                    key = f"_{key}"
                 setattr(self, key, value)
 
 

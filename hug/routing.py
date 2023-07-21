@@ -493,8 +493,7 @@ class URLRouter(HTTPRouter):
                     expose.append(os.path.join(base_url, suffix.lstrip("/")))
                 else:
                     expose.append(base_url + suffix)
-            for prefix in self.route.get("prefixes", ()):
-                expose.append(prefix + base_url)
+            expose.extend(prefix + base_url for prefix in self.route.get("prefixes", ()))
             for url in expose:
                 handlers = api.http.routes[api.http.base_url].setdefault(url, {})
                 for method in self.route.get("accept", ()):
@@ -608,8 +607,10 @@ class URLRouter(HTTPRouter):
                 if url.startswith("/") or not existing_urls:
                     use_urls.append(url)
                 else:
-                    for existing in existing_urls:
-                        use_urls.append(urljoin(existing.rstrip("/") + "/", url))
+                    use_urls.extend(
+                        urljoin(existing.rstrip("/") + "/", url)
+                        for existing in existing_urls
+                    )
             overrides["urls"] = tuple(use_urls)
 
         return super().where(**overrides)

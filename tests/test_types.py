@@ -279,7 +279,7 @@ def test_one_of():
 
 def test_accept():
     """Tests to ensure the accept type wrapper works as expected"""
-    custom_converter = lambda value: value + " converted"
+    custom_converter = lambda value: f"{value} converted"
     custom_type = hug.types.accept(custom_converter, "A string Value")
     with pytest.raises(TypeError):
         custom_type(1)
@@ -287,7 +287,7 @@ def test_accept():
 
 def test_accept_custom_exception_text():
     """Tests to ensure it's easy to custom the exception text using the accept wrapper"""
-    custom_converter = lambda value: value + " converted"
+    custom_converter = lambda value: f"{value} converted"
     custom_type = hug.types.accept(custom_converter, "A string Value", "Error occurred")
     assert custom_type("bacon") == "bacon converted"
     with pytest.raises(ValueError):
@@ -404,10 +404,10 @@ def test_create_type():
     """Test hug's new type creation decorator works as expected"""
 
     @hug.type(
-        extend=hug.types.text,
-        exception_handlers={TypeError: ValueError, LookupError: "Hi!"},
-        error_text="Invalid",
-    )
+            extend=hug.types.text,
+            exception_handlers={TypeError: ValueError, LookupError: "Hi!"},
+            error_text="Invalid",
+        )
     def prefixed_string(value):
         if value == "hi":
             raise TypeError("Repeat of prefix")
@@ -415,7 +415,7 @@ def test_create_type():
             raise LookupError("Never say goodbye!")
         elif value == "1+1":
             raise ArithmeticError("Testing different error types")
-        return "hi-" + value
+        return f"hi-{value}"
 
     assert prefixed_string("there") == "hi-there"
     with pytest.raises(ValueError):
@@ -429,14 +429,14 @@ def test_create_type():
     def prefixed_string(value):
         if value == "1+1":
             raise ArithmeticError("Testing different error types")
-        return "hi-" + value
+        return f"hi-{value}"
 
     with pytest.raises(ArithmeticError):
         prefixed_string("1+1")
 
     @hug.type(extend=hug.types.text)
     def prefixed_string(value):
-        return "hi-" + value
+        return f"hi-{value}"
 
     assert prefixed_string("there") == "hi-there"
 

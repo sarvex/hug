@@ -16,7 +16,7 @@ class TestAPI(hug.API):
 @pytest.fixture
 def hug_api():
     """Defines a dependency for and then includes a uniquely identified hug API for a single test case"""
-    api = TestAPI("fake_api_{}".format(randint(0, 1000000)))
+    api = TestAPI(f"fake_api_{randint(0, 1000000)}")
     api.route = Routers(
         hug.routing.URLRouter().api(api),
         hug.routing.LocalRouter().api(api),
@@ -31,4 +31,4 @@ def hug_api_error_exit_codes_enabled():
     Defines a dependency for and then includes a uniquely identified hug API
     for a single test case with error exit codes enabled.
     """
-    return TestAPI("fake_api_{}".format(randint(0, 1000000)), cli_error_exit_codes=True)
+    return TestAPI(f"fake_api_{randint(0, 1000000)}", cli_error_exit_codes=True)

@@ -84,7 +84,7 @@ def basic(request, response, verify_user, realm="simple", context=None, **kwargs
         raise HTTPUnauthorized(
             "Authentication Error",
             "Authentication header is improperly formed",
-            challenges=('Basic realm="{}"'.format(realm),),
+            challenges=(f'Basic realm="{realm}"',),
         )
 
     if auth_type.lower() == "basic":
@@ -103,7 +103,7 @@ def basic(request, response, verify_user, realm="simple", context=None, **kwargs
             raise HTTPUnauthorized(
                 "Authentication Error",
                 "Unable to determine user and password with provided encoding",
-                challenges=('Basic realm="{}"'.format(realm),),
+                challenges=(f'Basic realm="{realm}"',),
             )
     return False
 
@@ -116,17 +116,12 @@ def api_key(request, response, verify_user, context=None, **kwargs):
     API key as input, and return a user object to store in the request context
     if the request was successful.
     """
-    api_key = request.get_header("X-Api-Key")
-
-    if api_key:
+    if api_key := request.get_header("X-Api-Key"):
         try:
             user = verify_user(api_key)
         except TypeError:
             user = verify_user(api_key, context)
-        if user:
-            return user
-        else:
-            return False
+        return user if user else False
     else:
         return None
 
@@ -137,16 +132,12 @@ def token(request, response, verify_user, context=None, **kwargs):
 
     Checks for the Authorization header and verifies using the verify_user function
     """
-    token = request.get_header("Authorization")
-    if token:
+    if token := request.get_header("Authorization"):
         try:
             verified_token = verify_user(token)
         except TypeError:
             verified_token = verify_user(token, context)
-        if verified_token:
-            return verified_token
-        else:
-            return False
+        return verified_token if verified_token else False
     return None
 
 
@@ -154,8 +145,6 @@ def verify(user, password):
     """Returns a simple verification callback that simply verifies that the users and password match that provided"""
 
     def verify_user(user_name, user_password):
-        if user_name == user and user_password == password:
-            return user_name
-        return False
+        return user_name if user_name == user and user_password == password else False
 
     return verify_user

@@ -128,7 +128,7 @@ class HTTPInterfaceAPI(InterfaceAPI):
             for _url, methods in mapping.items():
                 for _method, versions in methods.items():
                     for _version, handler in versions.items():
-                        if not handler in used:
+                        if handler not in used:
                             used.append(handler)
                             yield handler
 
@@ -203,7 +203,7 @@ class HTTPInterfaceAPI(InterfaceAPI):
                         self.add_exception_handler(exception_type, exception_handler, version)
 
         for input_format, input_format_handler in getattr(http_api, "_input_format", {}).items():
-            if not input_format in getattr(self, "_input_format", {}):
+            if input_format not in getattr(self, "_input_format", {}):
                 self.set_input_format(input_format, input_format_handler)
 
         for version, handler in http_api.not_found_handlers.items():
@@ -225,8 +225,7 @@ class HTTPInterfaceAPI(InterfaceAPI):
         """Generates and returns documentation for this API endpoint"""
         documentation = OrderedDict()
         base_url = self.base_url if base_url is None else base_url
-        overview = self.api.doc
-        if overview:
+        if overview := self.api.doc:
             documentation["overview"] = overview
 
         version_dict = OrderedDict()
@@ -236,7 +235,7 @@ class HTTPInterfaceAPI(InterfaceAPI):
             versions_list.remove(None)
         if False in versions_list:
             versions_list.remove(False)
-        if api_version is None and len(versions_list) > 0:
+        if api_version is None and versions_list:
             api_version = max(versions_list)
             documentation["version"] = api_version
         elif api_version is not None:
@@ -249,10 +248,7 @@ class HTTPInterfaceAPI(InterfaceAPI):
                     for version, handler in method_versions.items():
                         if getattr(handler, "private", False):
                             continue
-                        if version is None:
-                            applies_to = versions
-                        else:
-                            applies_to = (version,)
+                        applies_to = versions if version is None else (version, )
                         for version in applies_to:
                             if api_version and version != api_version:
                                 continue
@@ -271,11 +267,7 @@ class HTTPInterfaceAPI(InterfaceAPI):
 
     def serve(self, host="", port=8000, no_documentation=False, display_intro=True):
         """Runs the basic hug development server against this API"""
-        if no_documentation:
-            api = self.server(None)
-        else:
-            api = self.server()
-
+        api = self.server(None) if no_documentation else self.server()
         if display_intro:
             print(INTRO)
 
@@ -291,18 +283,19 @@ class HTTPInterfaceAPI(InterfaceAPI):
     def determine_version(self, request, api_version=None):
         """Determines the appropriate version given the set api_version, the request header, and URL query params"""
         if api_version is False:
-            api_version = None
-            for version in self.versions:
-                if version and "v{0}".format(version) in request.path:
-                    api_version = version
-                    break
-
+            api_version = next(
+                (
+                    version
+                    for version in self.versions
+                    if version and "v{0}".format(version) in request.path
+                ),
+                None,
+            )
         request_version = set()
         if api_version is not None:
             request_version.add(api_version)
 
-        version_header = request.get_header("X-API-VERSION")
-        if version_header:
+        if version_header := request.get_header("X-API-VERSION"):
             request_version.add(version_header)
 
         version_param = request.get_param("api_version")
@@ -433,14 +426,14 @@ class CLIInterfaceAPI(InterfaceAPI):
         """Routes to the correct command line tool"""
         self.api._ensure_started()
         args = sys.argv if args is None else args
-        if not len(args) > 1 or not args[1] in self.commands:
-            print(str(self))
+        if len(args) <= 1 or args[1] not in self.commands:
+            print(self)
             return sys.exit(1)
 
         command = args.pop(1)
         result = self.commands.get(command)()
 
-        if self.error_exit_codes and bool(strtobool(result.decode("utf-8"))) is False:
+        if self.error_exit_codes and not bool(strtobool(result.decode("utf-8"))):
             sys.exit(1)
 
     def handlers(self):
@@ -458,7 +451,7 @@ class CLIInterfaceAPI(InterfaceAPI):
             self.commands[sub_command] = cli_api
         else:
             for name, command in cli_api.commands.items():
-                self.commands["{}{}".format(command_prefix, name)] = command
+                self.commands[f"{command_prefix}{name}"] = command
 
     @property
     def output_format(self):
@@ -474,7 +467,11 @@ class CLIInterfaceAPI(InterfaceAPI):
             command_string = " - {}{}".format(
                 command_name, ": " + str(command).replace("\n", " ") if str(command) else ""
             )
-            output += command_string[:77] + "..." if len(command_string) > 80 else command_string
+            output += (
+                f"{command_string[:77]}..."
+                if len(command_string) > 80
+                else command_string
+            )
             output += "\n"
         return output
 
@@ -493,7 +490,7 @@ class ModuleSingleton(type):
         elif module is None:
             return super().__call__(*args, **kwargs)
 
-        if not "__hug__" in module.__dict__:
+        if "__hug__" not in module.__dict__:
 
             def api_auto_instantiate(*args, **kwargs):
                 if not hasattr(module, "__hug_serving__"):
@@ -543,7 +540,8 @@ class API(object, metaclass=ModuleSingleton):
             hug.defaults.directives.items(), getattr(self, "_directives", {}).items()
         )
         return {
-            "hug_" + directive_name: directive for directive_name, directive in directive_sources
+            f"hug_{directive_name}": directive
+            for directive_name, directive in directive_sources
         }
 
     def directive(self, name, default=None):
@@ -634,7 +632,7 @@ class API(object, metaclass=ModuleSingleton):
                     asyncio.gather(*[handler(self) for handler in async_handlers])
                 )
             for startup_handler in self.startup_handlers:
-                if not startup_handler in async_handlers:
+                if startup_handler not in async_handlers:
                     startup_handler(self)
 
     @property

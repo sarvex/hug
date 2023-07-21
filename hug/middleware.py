@@ -185,11 +185,11 @@ class CORSMiddleware(object):
             response.set_header("Access-Control-Allow-Origin", origin)
 
         if request.method == "OPTIONS":  # check if we are handling a preflight request
-            allowed_methods = set(
+            allowed_methods = {
                 method
                 for _, routes in self.api.http.routes.items()
                 for method, _ in routes[self.match_route(request.path)].items()
-            )
+            }
             allowed_methods.add("OPTIONS")
 
             # return allowed methods
