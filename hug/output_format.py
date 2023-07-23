@@ -206,10 +206,7 @@ def on_valid(valid_content_type, on_invalid=json):
 @content_type("text/plain; charset=utf-8")
 def text(content, **kwargs):
     """Free form UTF-8 text"""
-    if hasattr(content, "read"):
-        return content
-
-    return str(content).encode("utf8")
+    return content if hasattr(content, "read") else str(content).encode("utf8")
 
 
 @content_type("text/html; charset=utf-8")
@@ -232,10 +229,7 @@ def _camelcase(content):
             new_dictionary[key] = _camelcase(value)
         return new_dictionary
     elif isinstance(content, list):
-        new_list = []
-        for element in content:
-            new_list.append(_camelcase(element))
-        return new_list
+        return [_camelcase(element) for element in content]
     else:
         return content
 
@@ -358,8 +352,7 @@ def accept_quality(accept, default=1):
     quality = default
     if accept and ";" in accept:
         accept, rest = accept.split(";", 1)
-        accept_quality = RE_ACCEPT_QUALITY.search(rest)
-        if accept_quality:
+        if accept_quality := RE_ACCEPT_QUALITY.search(rest):
             quality = float(accept_quality.groupdict().get("quality", quality).strip())
 
     return (quality, accept.strip())

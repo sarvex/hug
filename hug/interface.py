@@ -99,11 +99,7 @@ class Interfaces(object):
         if self.spec is not function:
             self.all_parameters.update(self.arguments)
 
-        if args is not None:
-            transformers = args
-        else:
-            transformers = self.spec.__annotations__
-
+        transformers = args if args is not None else self.spec.__annotations__
         self.transform = transformers.get("return", None)
         self.directives = {}
         self.input_transformations = {}
@@ -176,7 +172,7 @@ class Interface(object):
         if "output_invalid" in route:
             self.invalid_outputs = route["output_invalid"]
 
-        if not "parameters" in route:
+        if "parameters" not in route:
             self.defaults = self.interface.defaults
             self.parameters = self.interface.parameters
             self.all_parameters = self.interface.all_parameters
@@ -282,8 +278,8 @@ class Interface(object):
                     else:
                         errors[key] = str(error)
         for require in self.required:
-            if not require in input_parameters:
-                errors[require] = "Required parameter '{}' not supplied".format(require)
+            if require not in input_parameters:
+                errors[require] = f"Required parameter '{require}' not supplied"
         if not errors and getattr(self, "validate_function", False):
             errors = self.validate_function(input_parameters)
         return errors
@@ -306,8 +302,7 @@ class Interface(object):
 
         doc = OrderedDict() if add_to is None else add_to
 
-        usage = self.interface.spec.__doc__
-        if usage:
+        if usage := self.interface.spec.__doc__:
             doc["usage"] = usage
         if getattr(self, "requires", None):
             doc["requires"] = [
@@ -317,15 +312,14 @@ class Interface(object):
         doc["outputs"] = OrderedDict()
         doc["outputs"]["format"] = _doc(self.outputs)
         doc["outputs"]["content_type"] = self.outputs.content_type
-        parameters = [
+        if parameters := [
             param
             for param in self.parameters
-            if not param in ("request", "response", "self")
-            and not param in ("api_version", "body")
+            if param not in ("request", "response", "self")
+            and param not in ("api_version", "body")
             and not param.startswith("hug_")
             and not hasattr(param, "directive")
-        ]
-        if parameters:
+        ]:
             inputs = doc.setdefault("inputs", OrderedDict())
             types = self.interface.spec.__annotations__
             for argument in parameters:
@@ -395,8 +389,7 @@ class Local(Interface):
         """Defines how calling the function locally should be handled"""
 
         for _requirement in self.requires:
-            lacks_requirement = self.check_requirements(context=context)
-            if lacks_requirement:
+            if lacks_requirement := self.check_requirements(context=context):
                 self.api.delete_context(context, lacks_requirement=lacks_requirement)
                 return self.outputs(lacks_requirement) if self.outputs else lacks_requirement
 
@@ -417,8 +410,7 @@ class Local(Interface):
                 )
 
         if not getattr(self, "skip_validation", False):
-            errors = self.validate(kwargs, context)
-            if errors:
+            if errors := self.validate(kwargs, context):
                 errors = {"errors": errors}
                 if getattr(self, "on_invalid", False):
                     errors = self.on_invalid(errors)
@@ -538,7 +530,7 @@ class CLI(Interface):
             elif (
                 not nargs_set
                 and kwargs.get("action", None) == "append"
-                and not option in self.interface.defaults
+                and option not in self.interface.defaults
             ):
                 kwargs["nargs"] = "*"
                 kwargs.pop("action", "")
@@ -584,7 +576,7 @@ class CLI(Interface):
                 return self.output(conclusion, context)
 
         if self.interface.is_method:
-            self.parser.prog = "%s %s" % (self.api.module.__name__, self.interface.name)
+            self.parser.prog = f"{self.api.module.__name__} {self.interface.name}"
 
         known, unknown = self.parser.parse_known_args()
         pass_to_function = vars(known)
@@ -719,15 +711,14 @@ class HTTP(Interface):
 
     def gather_parameters(self, request, response, context, api_version=None, **input_parameters):
         """Gathers and returns all parameters that will be used for this endpoint"""
-        input_parameters.update(request.params)
+        input_parameters |= request.params
 
         if self.parse_body and request.content_length:
             body = request.bounded_stream
             content_type, content_params = parse_content_type(request.content_type)
-            body_formatter = body and self.inputs.get(
+            if body_formatter := body and self.inputs.get(
                 content_type, self.api.http.input_format(content_type)
-            )
-            if body_formatter:
+            ):
                 body = body_formatter(body, content_length=request.content_length, **content_params)
             if "body" in self.all_parameters:
                 input_parameters["body"] = body
@@ -866,11 +857,10 @@ class HTTP(Interface):
                 response.status = falcon.HTTP_206
                 response.content_range = (start, end, size)
                 content.close()
+            elif size:
+                response.set_stream(content, size)
             else:
-                if size:
-                    response.set_stream(content, size)
-                else:
-                    response.stream = content  # pragma: no cover
+                response.stream = content  # pragma: no cover
         else:
             response.data = content
 
@@ -895,8 +885,9 @@ class HTTP(Interface):
         input_parameters = {}
         try:
             self.set_response_defaults(response, request)
-            lacks_requirement = self.check_requirements(request, response, context)
-            if lacks_requirement:
+            if lacks_requirement := self.check_requirements(
+                request, response, context
+            ):
                 response.data = self.outputs(
                     lacks_requirement,
                     **self._arguments(self._params_for_outputs, request, response)
@@ -907,8 +898,7 @@ class HTTP(Interface):
             input_parameters = self.gather_parameters(
                 request, response, context, api_version, **kwargs
             )
-            errors = self.validate(input_parameters, context)
-            if errors:
+            if errors := self.validate(input_parameters, context):
                 self.api.delete_context(context, errors=errors)
                 return self.render_errors(errors, request, response)
 
@@ -950,8 +940,7 @@ class HTTP(Interface):
         """Returns the documentation specific to an HTTP interface"""
         doc = OrderedDict() if add_to is None else add_to
 
-        usage = self.interface.spec.__doc__
-        if usage:
+        if usage := self.interface.spec.__doc__:
             doc["usage"] = usage
 
         for example in self.examples:
@@ -961,7 +950,7 @@ class HTTP(Interface):
             if isinstance(example, str):
                 example_text += "?{0}".format(example)
             doc_examples = doc.setdefault("examples", [])
-            if not example_text in doc_examples:
+            if example_text not in doc_examples:
                 doc_examples.append(example_text)
 
         doc = super().documentation(doc)
@@ -980,14 +969,14 @@ class HTTP(Interface):
                 for _method, versions in methods.items():
                     for interface_version, interface in versions.items():
                         if interface_version == version and interface == self:
-                            if not url in urls:
+                            if url not in urls:
                                 urls.append(("/v{0}".format(version) if version else "") + url)
         return urls
 
     def url(self, version=None, **kwargs):
         """Returns the first matching URL found for the specified arguments"""
         for url in self.urls(version):
-            if [key for key in kwargs.keys() if not "{" + key + "}" in url]:
+            if [key for key in kwargs if "{" + key + "}" not in url]:
                 continue
 
             return url.format(**kwargs)

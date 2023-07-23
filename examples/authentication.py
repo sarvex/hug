@@ -41,12 +41,7 @@ class APIUser(object):
 
 def api_key_verify(api_key):
     magic_key = "5F00832B-DE24-4CAF-9638-C10D1C642C6C"  # Obviously, this would hit your database
-    if api_key == magic_key:
-        # Success!
-        return APIUser("user_foo", api_key)
-    else:
-        # Invalid key
-        return None
+    return APIUser("user_foo", api_key) if api_key == magic_key else None
 
 
 api_key_authentication = hug.authentication.api_key(api_key_verify)
@@ -76,10 +71,10 @@ def token_auth_call(user: hug.directives.user):
 @hug.post("/token_generation")  # noqa
 def token_gen_call(username, password):
     """Authenticate and return a token"""
-    secret_key = "super-secret-key-please-change"
     mockusername = "User2"
     mockpassword = "Mypassword"
     if mockpassword == password and mockusername == username:  # This is an example. Don't do that.
+        secret_key = "super-secret-key-please-change"
         return {
             "token": jwt.encode({"user": username, "data": "mydata"}, secret_key, algorithm="HS256")
         }

@@ -42,10 +42,7 @@ def content_type(transformers, default=None):
 
     def transform(data, request):
         transformer = transformers.get(request.content_type.split(";")[0], default)
-        if not transformer:
-            return data
-
-        return transformer(data)
+        return data if not transformer else transformer(data)
 
     return transform
 

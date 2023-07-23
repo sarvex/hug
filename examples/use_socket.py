@@ -32,4 +32,4 @@ GET / HTTP/1.0\r\n\r\n
 Host: www.google.com\r\n\r\n
 \r\n\r\n
 """
-    return http_socket.request(http_request, timeout=5.0).data.read()[0:length]
+    return http_socket.request(http_request, timeout=5.0).data.read()[:length]

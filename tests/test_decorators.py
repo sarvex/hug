@@ -902,9 +902,7 @@ def test_requires():
     """Test to ensure only if requirements successfully keep calls from happening"""
 
     def user_is_not_tim(request, response, **kwargs):
-        if request.headers.get("USER", "") != "Tim":
-            return True
-        return "Unauthorized"
+        return True if request.headers.get("USER", "") != "Tim" else "Unauthorized"
 
     @hug.get(requires=user_is_not_tim)
     def hello(request):
@@ -1137,10 +1135,7 @@ def test_cli_with_hug_types():
 
     @hug.cli()
     def succeed(success: hug.types.smart_boolean = False):
-        if success:
-            return "Yes!"
-        else:
-            return "No :("
+        return "Yes!" if success else "No :("
 
     assert hug.test.cli(succeed) == "No :("
     assert hug.test.cli(succeed, success=True) == "Yes!"
@@ -1148,10 +1143,7 @@ def test_cli_with_hug_types():
 
     @hug.cli()
     def succeed(success: hug.types.smart_boolean = True):
-        if success:
-            return "Yes!"
-        else:
-            return "No :("
+        return "Yes!" if success else "No :("
 
     assert hug.test.cli(succeed) == "Yes!"
     assert hug.test.cli(succeed, success="false") == "No :("
@@ -1448,13 +1440,15 @@ def test_cli_with_args():
 def test_cli_using_method():
     """Test to ensure that attaching a cli to a class method works as expected"""
 
+
+
     class API(object):
         def __init__(self):
             hug.cli()(self.hello_world_method)
 
         def hello_world_method(self):
-            variable = "Hello World!"
-            return variable
+            return "Hello World!"
+
 
     api_instance = API()
     assert api_instance.hello_world_method() == "Hello World!"
@@ -1478,7 +1472,6 @@ def test_cli_with_exception():
     @hug.cli()
     def test():
         raise ValueError()
-        return "Hi!"
 
     assert hug.test.cli(test) != "Hi!"
 
@@ -1663,7 +1656,7 @@ def test_validate():
     """Test to ensure hug's secondary validation mechanism works as expected"""
 
     def contains_either(fields):
-        if not "one" in fields and not "two" in fields:
+        if "one" not in fields and "two" not in fields:
             return {"one": "must be defined", "two": "must be defined"}
 
     @hug.get(validate=contains_either)
@@ -1759,7 +1752,7 @@ def test_json_null(hug_api):
             body='{"argument_1": null}',
             headers={"content-type": "application/json"},
         ).data
-        == None
+        is None
     )
 
     @hug_api.route.http.post()

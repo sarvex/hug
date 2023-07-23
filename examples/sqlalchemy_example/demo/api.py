@@ -11,7 +11,7 @@ def create_user2(db: SqlalchemySession, data: CreateUserSchema()):
     user = TestUser(**data)
     db.add(user)
     db.flush()
-    return dict()
+    return {}
 
 
 @hug.post("/create_user", requires=basic_authentication)
@@ -19,7 +19,7 @@ def create_user(db: SqlalchemySession, username: unique_username, password: hug.
     user = TestUser(username=username, password=password)
     db.add(user)
     db.flush()
-    return dict()
+    return {}
 
 
 @hug.get("/test")

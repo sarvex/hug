@@ -73,7 +73,7 @@ def hug(
     api = API(api_module, display_intro=not silent)
     if command:
         if command not in api.cli.commands:
-            print(str(api.cli))
+            print(api.cli)
             sys.exit(1)
 
         flag_index = (sys.argv.index("-c") if "-c" in sys.argv else sys.argv.index("--command")) + 1
@@ -125,10 +125,10 @@ def reload_checker(interval):
         while not changed:
             for path, last_modified in files.items():
                 if not exists(path):
-                    print("\n> Reloading due to file removal: {}".format(path))
+                    print(f"\n> Reloading due to file removal: {path}")
                     changed = True
                 elif os.stat(path).st_mtime > last_modified:
-                    print("\n> Reloading due to file change: {}".format(path))
+                    print(f"\n> Reloading due to file change: {path}")
                     changed = True
 
                 if changed:

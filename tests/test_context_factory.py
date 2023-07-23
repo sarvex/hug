@@ -106,7 +106,7 @@ class TestContextFactoryLocal(object):
             custom_context["launched_local_function"] = value
 
         validation_local_function(43)
-        assert not "launched_local_function" in custom_context
+        assert "launched_local_function" not in custom_context
         assert "launched_delete_context" in custom_context
 
     def test_transform(self):

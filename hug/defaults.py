@@ -48,7 +48,7 @@ directives = {
 
 
 def context_factory(*args, **kwargs):
-    return dict()
+    return {}
 
 
 def delete_context(context, exception=None, errors=None, lacks_requirement=None):

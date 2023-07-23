@@ -167,12 +167,11 @@ class Local(Service):
         )
         interface.set_response_defaults(response)
 
-        params.update(url_params)
+        params |= url_params
         params = interface.gather_parameters(
             request, response, context, api_version=self.version, **params
         )
-        errors = interface.validate(params, context)
-        if errors:
+        if errors := interface.validate(params, context):
             interface.render_errors(errors, request, response)
         else:
             interface.render_content(interface.call_function(params), context, request, response)

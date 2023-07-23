@@ -154,38 +154,36 @@ class TestSocket(object):
     def test_protocols(self):
         """Test to ensure all supported protocols are present"""
         protocols = sorted(["tcp", "udp", "unix_stream", "unix_dgram"])
-        if self.on_unix:
-            assert sorted(self.tcp_service.protocols) == protocols
-        else:
+        if not self.on_unix:
             protocols.remove("unix_stream")
             protocols.remove("unix_dgram")
-            assert sorted(self.tcp_service.protocols) == protocols
+        assert sorted(self.tcp_service.protocols) == protocols
 
     def test_streams(self):
         if self.on_unix:
-            assert set(self.tcp_service.streams) == set(("tcp", "unix_stream"))
+            assert set(self.tcp_service.streams) == {"tcp", "unix_stream"}
         else:
-            assert set(self.tcp_service.streams) == set(("tcp",))
+            assert set(self.tcp_service.streams) == {"tcp"}
 
     def test_datagrams(self):
         if self.on_unix:
-            assert set(self.tcp_service.datagrams) == set(("udp", "unix_dgram"))
+            assert set(self.tcp_service.datagrams) == {"udp", "unix_dgram"}
         else:
-            assert set(self.tcp_service.datagrams) == set(("udp",))
+            assert set(self.tcp_service.datagrams) == {"udp"}
 
     def test_inet(self):
-        assert set(self.tcp_service.inet) == set(("tcp", "udp"))
+        assert set(self.tcp_service.inet) == {"tcp", "udp"}
 
     def test_unix(self):
         if self.on_unix:
-            assert set(self.tcp_service.unix) == set(("unix_stream", "unix_dgram"))
+            assert set(self.tcp_service.unix) == {"unix_stream", "unix_dgram"}
         else:
-            assert set(self.tcp_service.unix) == set()
+            assert not set(self.tcp_service.unix)
 
     def test_connection(self):
         assert self.tcp_service.connection.connect_to == ("www.google.com", 80)
         assert self.tcp_service.connection.proto == "tcp"
-        assert set(self.tcp_service.connection.sockopts) == set()
+        assert not set(self.tcp_service.connection.sockopts)
 
     def test_settimeout(self):
         self.tcp_service.settimeout(60)

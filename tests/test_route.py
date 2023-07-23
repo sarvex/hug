@@ -106,17 +106,20 @@ def test_routing_class_based_method_view_with_sub_routing():
 def test_routing_class_with_cli_commands():
     """Basic operation test"""
 
+
+
     @hug.object(name="git", version="1.0.0")
     class GIT(object):
         """An example of command like calls via an Object"""
 
         @hug.object.cli
         def push(self, branch="master"):
-            return "Pushing {}".format(branch)
+            return f"Pushing {branch}"
 
         @hug.object.cli
         def pull(self, branch="master"):
-            return "Pulling {}".format(branch)
+            return f"Pulling {branch}"
+
 
     assert "token" in hug.test.cli(GIT.push, branch="token")
     assert "another token" in hug.test.cli(GIT.pull, branch="another token")
