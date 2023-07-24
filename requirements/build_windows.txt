@@ -2,7 +2,7 @@
 flake8==5.0.4
 isort==4.3.20
 marshmallow==3.19.0
-pytest==4.6.3
+pytest==7.4.0
 wheel==0.41.0
 pytest-xdist==1.29.0
 numpy==1.22.0
