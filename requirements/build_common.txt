@@ -1,7 +1,7 @@
 -r common.txt
 flake8==5.0.4
 pytest-cov==2.7.1
-pytest==4.6.3
+pytest==7.4.0
 python-coveralls==2.9.2
 wheel==0.41.0
 PyJWT==2.4.0
