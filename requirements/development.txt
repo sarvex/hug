@@ -9,7 +9,7 @@ pytest==4.6.3
 python-coveralls==2.9.2
 tox==3.12.1
 wheel
-pytest-xdist==1.29.0
+pytest-xdist==3.3.1
 marshmallow==3.19.0
 ujson==1.35
 numpy<1.23
